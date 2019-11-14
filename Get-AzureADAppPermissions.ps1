@@ -1,28 +1,62 @@
+#Connect
 Connect-AzureAD
 
-$SPs = Get-AzureADServicePrincipal -All $true 
+#Create array we will use to gather data into.
+[array]$Report = $null
+
+#Get all service principles
+$SPs = Get-AzureADServicePrincipal -All $true
 [array]$AppRoles = $null
+
+#Get Application Permissions (access without a user)
 Foreach ($SP in $SPs) {
     $AppRoles += Get-AzureADServiceAppRoleAssignedTo -ObjectId $SP.ObjectID
 }
 
-[array]$Report = $null
-
 Foreach ($AppRole in $AppRoles) {
-
-    $Resource = Get-AzureADObjectByObjectId -ObjectIds $AppRole.ResourceId
-    $Permission = $Resource.AppRoles | Where-Object {$_.id -eq $AppRole.Id}
-    $Principal = Get-AzureADObjectByObjectId -ObjectIds $AppRole.PrincipalId
-    $Application = Get-AzureADApplication -All $True | Where-Object {$_.AppId -eq $Principal.AppId}
     
-    $Row = New-Object PSObject
-    $Row | add-member Noteproperty App                          $AppRole.PrincipalDisplayName
-    $Row | add-member Noteproperty Resource                     $AppRole.ResourceDisplayName
-    $Row | add-member Noteproperty Permission                   $Permission.Value
-    $Row | add-member Noteproperty SecretEndDate                $Application.PasswordCredentials.EndDate
-    $Row | add-member Noteproperty CertEndDate                  $Application.KeyCredentials.EndDate
-    $Row | add-member Noteproperty CreatedDate                  $AppRole.CreationTimestamp
-    $Report += $Row
+    #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
+    $Application = Get-AzureADApplication -All $True | Where-Object { $_.AppId -eq $Principal.AppId }
+    If (($Application.PasswordCredentials) -or ($Application.KeyCredentials)) {
+    
+        $Resource = Get-AzureADObjectByObjectId -ObjectIds $AppRole.ResourceId
+        $Permission = $Resource.AppRoles | Where-Object { $_.id -eq $AppRole.Id }
+        $Principal = Get-AzureADObjectByObjectId -ObjectIds $AppRole.PrincipalId
+        
+        $Row = New-Object PSObject
+        $Row | add-member Noteproperty App                          $Application.DisplayName
+        $Row | add-member Noteproperty Resource                     $AppRole.ResourceDisplayName
+        $Row | add-member Noteproperty Permission                   $Permission.Value
+        $Row | add-member Noteproperty SecretEndDate                $Application.PasswordCredentials.EndDate
+        $Row | add-member Noteproperty CertEndDate                  $Application.KeyCredentials.EndDate
+        $Row | add-member Noteproperty CreatedDate                  $AppRole.CreationTimestamp
+        $Report += $Row
+    }
 }
 
-$Report | Select-Object App, Resource, Permission, SecretEndDate, CertEndDate, CreatedDate | Sort-Object Resource, Permission | Format-Table
+#Get Application Roles & Groups (access without a user)
+Foreach ($SP in $SPs) {
+      
+    #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
+    $Application = Get-AzureADApplication -All $True | Where-Object { $_.AppId -eq $SP.AppId }
+    If (($Application.PasswordCredentials) -or ($Application.KeyCredentials)) {
+
+        $AppMemberships = Get-AzureADServicePrincipalMembership -ObjectId $SP.ObjectID
+    
+        Foreach ($AppMembership in $AppMemberships) {
+    
+            $Row = New-Object PSObject
+            $Row | add-member Noteproperty App                          $Application.DisplayName
+            $Row | add-member Noteproperty Resource                     $AppMembership.ObjectType
+            $Row | add-member Noteproperty Permission                   $AppMembership.DisplayName
+            $Row | add-member Noteproperty SecretEndDate                $Application.PasswordCredentials.EndDate
+            $Row | add-member Noteproperty CertEndDate                  $Application.KeyCredentials.EndDate
+            $Row | add-member Noteproperty CreatedDate                  $AppRole.CreationTimestamp
+            $Report += $Row
+        }
+    }
+}
+
+$Report | Format-Table
+
+
