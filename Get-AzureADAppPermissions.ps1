@@ -58,7 +58,6 @@ Foreach ($SP in $SPs) {
 }
 
 $Report 
-$Report | Out-File .\NotFilterd3.txt
 
 
 
