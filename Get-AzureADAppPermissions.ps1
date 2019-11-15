@@ -6,31 +6,30 @@ Connect-AzureAD
 
 #Get all service principles
 $SPs = Get-AzureADServicePrincipal -All $true
-[array]$AppRoles = $null
+
 
 #Get Application Permissions (access without a user)
 Foreach ($SP in $SPs) {
-    $AppRoles += Get-AzureADServiceAppRoleAssignedTo -ObjectId $SP.ObjectID
-}
+    [array]$AppRoles = Get-AzureADServiceAppRoleAssignedTo -ObjectId $SP.ObjectID
 
-Foreach ($AppRole in $AppRoles) {
+    Foreach ($AppRole in $AppRoles) {
     
-    #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
-    $Application = Get-AzureADApplication -All $True | Where-Object { $_.AppId -eq $Principal.AppId }
-    If (($Application.PasswordCredentials) -or ($Application.KeyCredentials)) {
-    
+        #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
         $Resource = Get-AzureADObjectByObjectId -ObjectIds $AppRole.ResourceId
         $Permission = $Resource.AppRoles | Where-Object { $_.id -eq $AppRole.Id }
-        $Principal = Get-AzureADObjectByObjectId -ObjectIds $AppRole.PrincipalId
-        
-        $Row = New-Object PSObject
-        $Row | add-member Noteproperty App                          $Application.DisplayName
-        $Row | add-member Noteproperty Resource                     $AppRole.ResourceDisplayName
-        $Row | add-member Noteproperty Permission                   $Permission.Value
-        $Row | add-member Noteproperty SecretEndDate                $Application.PasswordCredentials.EndDate
-        $Row | add-member Noteproperty CertEndDate                  $Application.KeyCredentials.EndDate
-        $Row | add-member Noteproperty CreatedDate                  $AppRole.CreationTimestamp
-        $Report += $Row
+        $Application = Get-AzureADApplication -All $True | Where-Object { $_.AppId -eq $SP.AppId }
+
+        If ($Application) {
+
+            $Row = New-Object PSObject
+            $Row | add-member Noteproperty App                          $Application.DisplayName
+            $Row | add-member Noteproperty Resource                     $AppRole.ResourceDisplayName
+            $Row | add-member Noteproperty Permission                   $Permission.Value
+            $Row | add-member Noteproperty SecretEndDate                $Application.PasswordCredentials.EndDate
+            $Row | add-member Noteproperty CertEndDate                  $Application.KeyCredentials.EndDate
+            $Row | add-member Noteproperty CreatedDate                  $AppRole.CreationTimestamp
+            $Report += $Row
+        }
     }
 }
 
@@ -39,7 +38,8 @@ Foreach ($SP in $SPs) {
       
     #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
     $Application = Get-AzureADApplication -All $True | Where-Object { $_.AppId -eq $SP.AppId }
-    If (($Application.PasswordCredentials) -or ($Application.KeyCredentials)) {
+    
+    If ($Application) {
 
         $AppMemberships = Get-AzureADServicePrincipalMembership -ObjectId $SP.ObjectID
     
@@ -57,6 +57,8 @@ Foreach ($SP in $SPs) {
     }
 }
 
-$Report | Format-Table
+$Report 
+$Report | Out-File .\NotFilterd3.txt
+
 
 
