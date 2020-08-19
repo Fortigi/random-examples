@@ -17,12 +17,14 @@ Foreach ($SP in $SPs) {
     Foreach ($AppOAuth2Permission in $AppOAuth2Permissions) {
     
         $Principal = $null
-        If ($AppOAuth2Permission.PrincipalId) {$Principal = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.PrincipalId -ErrorAction SilentlyContinue}
+        If ($AppOAuth2Permission.PrincipalId) {
+            $Principal = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.PrincipalId -ErrorAction SilentlyContinue
+        }
 
         if ($Principal) {
 
-            If ($AppOAuth2Permission.ResourceId) {$Resource = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ResourceId}
-            If ($AppOAuth2Permission.ClientId) {$Application = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ClientId}
+            $Resource = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ResourceId
+            $Application = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ClientId
             [array]$Scopes = $AppOAuth2Permission.Scope.Split(" ")
 
             Foreach ($Scope in $Scopes) {
