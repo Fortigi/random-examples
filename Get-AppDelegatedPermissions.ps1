@@ -16,12 +16,13 @@ Foreach ($SP in $SPs) {
 
     Foreach ($AppOAuth2Permission in $AppOAuth2Permissions) {
     
-        #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
-        $Principal = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.PrincipalId -ErrorAction SilentlyContinue
+        $Principal = $null
+        If ($AppOAuth2Permission.PrincipalId) {$Principal = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.PrincipalId -ErrorAction SilentlyContinue}
 
         if ($Principal) {
-            $Resource = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ResourceId
-            $Application = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ClientId
+
+            If ($AppOAuth2Permission.ResourceId) {$Resource = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ResourceId}
+            If ($AppOAuth2Permission.ClientId) {$Application = Get-AzureADObjectByObjectId -ObjectIds $AppOAuth2Permission.ClientId}
             [array]$Scopes = $AppOAuth2Permission.Scope.Split(" ")
 
             Foreach ($Scope in $Scopes) {
