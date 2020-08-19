@@ -43,9 +43,12 @@ Foreach ($SP in $SPs) {
 Write-Host "Full List"
 $Report | Format-Table
 
-Write-Host "Filterd..."
-$Report | Where-Object {$_.Permission.contains(".")} | Format-Table
+Write-Host "Filter for active.."
+$ActiveReport = $Report | Where-Object {$_.ExpiryTime -gt (Get-Date)}
+
+Write-Host "Filter for . meaning all of something.. all mail, all files.. you profile.. not just your email adres or your id"
+$ActiveReport | Where-Object {$_.Permission.contains(".")} | Format-Table
 
 Write-Host "Filterd, specificaly for Mail. or Files."
-$Report | Where-Object {$_.Permission.contains("Mail.") -or $_.Permission.contains("Files.")} | Format-Table
+$ActiveReport | Where-Object {$_.Permission.contains("Mail.") -or $_.Permission.contains("Files.")} | Format-Table
 
