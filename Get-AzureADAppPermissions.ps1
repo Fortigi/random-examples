@@ -1,20 +1,24 @@
+[CmdletBinding()]
+param()
+
 #Connect
 Connect-AzureAD
 
 #Create array we will use to gather data into.
 [array]$Report = $null
 
-#Get all service principles
+#Get all service principals
+Write-Verbose -Message "Retrieving all Azure AD Service Principals"
 $SPs = Get-AzureADServicePrincipal -All $true
-
 
 #Get Application Permissions (access without a user)
 Foreach ($SP in $SPs) {
+    Write-Verbose -Message "Processing Application Permissions (access without a user) for $($SP.DisplayName)"
     [array]$AppRoles = Get-AzureADServiceAppRoleAssignedTo -ObjectId $SP.ObjectID
 
     Foreach ($AppRole in $AppRoles) {
     
-        #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
+        #if the application has a secret or a certificate.. which means it can actually use the permissions without a user being present
         $Resource = Get-AzureADObjectByObjectId -ObjectIds $AppRole.ResourceId
         $Permission = $Resource.AppRoles | Where-Object { $_.id -eq $AppRole.Id }
         $Application = Get-AzureADApplication -All $True | Where-Object { $_.AppId -eq $SP.AppId }
@@ -22,12 +26,12 @@ Foreach ($SP in $SPs) {
         If ($Application) {
 
             $Row = New-Object PSObject
-            $Row | add-member Noteproperty App                          $Application.DisplayName
-            $Row | add-member Noteproperty Resource                     $AppRole.ResourceDisplayName
-            $Row | add-member Noteproperty Permission                   $Permission.Value
-            $Row | add-member Noteproperty SecretEndDate                $Application.PasswordCredentials.EndDate
-            $Row | add-member Noteproperty CertEndDate                  $Application.KeyCredentials.EndDate
-            $Row | add-member Noteproperty CreatedDate                  $AppRole.CreationTimestamp
+            $Row | Add-Member NoteProperty App                          $Application.DisplayName
+            $Row | Add-Member NoteProperty Resource                     $AppRole.ResourceDisplayName
+            $Row | Add-Member NoteProperty Permission                   $Permission.Value
+            $Row | Add-Member NoteProperty SecretEndDate                $Application.PasswordCredentials.EndDate
+            $Row | Add-Member NoteProperty CertEndDate                  $Application.KeyCredentials.EndDate
+            $Row | Add-Member NoteProperty CreatedDate                  $AppRole.CreationTimestamp
             $Report += $Row
         }
     }
@@ -35,8 +39,9 @@ Foreach ($SP in $SPs) {
 
 #Get Application Roles & Groups (access without a user)
 Foreach ($SP in $SPs) {
-      
-    #if the application has a secret or a certificate.. which means it can actualy use the permissions without a user being present
+    Write-Verbose -Message "Processing Application Roles & Groups (access without a user) for $($SP.DisplayName)"
+
+    #if the application has a secret or a certificate.. which means it can actually use the permissions without a user being present
     $Application = Get-AzureADApplication -All $True | Where-Object { $_.AppId -eq $SP.AppId }
     
     If ($Application) {
@@ -46,12 +51,12 @@ Foreach ($SP in $SPs) {
         Foreach ($AppMembership in $AppMemberships) {
     
             $Row = New-Object PSObject
-            $Row | add-member Noteproperty App                          $Application.DisplayName
-            $Row | add-member Noteproperty Resource                     $AppMembership.ObjectType
-            $Row | add-member Noteproperty Permission                   $AppMembership.DisplayName
-            $Row | add-member Noteproperty SecretEndDate                $Application.PasswordCredentials.EndDate
-            $Row | add-member Noteproperty CertEndDate                  $Application.KeyCredentials.EndDate
-            $Row | add-member Noteproperty CreatedDate                  $AppRole.CreationTimestamp
+            $Row | Add-Member NoteProperty App                          $Application.DisplayName
+            $Row | Add-Member NoteProperty Resource                     $AppMembership.ObjectType
+            $Row | Add-Member NoteProperty Permission                   $AppMembership.DisplayName
+            $Row | Add-Member NoteProperty SecretEndDate                $Application.PasswordCredentials.EndDate
+            $Row | Add-Member NoteProperty CertEndDate                  $Application.KeyCredentials.EndDate
+            $Row | Add-Member NoteProperty CreatedDate                  $AppRole.CreationTimestamp
             $Report += $Row
         }
     }
