@@ -1,6 +1,6 @@
 $TenantID = "3d55bf0a-1b6e-4c03-b451-810067fc76d9"
-$ClientID = "128017d1-97ac-45db-895b-6b7aa9cd7040"
-$ClientSecret = "TfmbMT~oicPr3334.xk4X8nK2o4~2mB~b_"
+$ClientID = "678ea3c7-b435-4024-b31a-a49dbf37de11"
+$ClientSecret = "fB8wXlEMA-3g8_--D_ez7_op2Uh4c3jk_U"
 
 #Get an access token.
 $Body = @{client_id = $ClientID; client_secret = $ClientSecret; grant_type = "client_credentials"; scope = "https://graph.microsoft.com/.default"; }
